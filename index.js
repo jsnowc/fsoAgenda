@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const app = express()
+const Person = require('./models/person')
 
 const cors = require('cors')
 app.use(cors())
@@ -36,16 +38,24 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (request, response) => {
-  response.json(phonebook)
+  Person.find({}).then(person => {
+    response.json(person)
+  })  
 })
 
 app.get('/info', (request, response) => {
   const date = new Date()
-  const info = `<p>Phonebook has info for ${phonebook.length} people</p><p>${date.toString()}</p>`
-  response.send(info)
+ 
+  Person.find({}).then(person => {
+    const info = `<p>Phonebook has info for ${person.length} people</p><p>${date.toString()}</p>`
+    response.send(info)
+  })   
 })
 
 app.get('/api/persons/:id', (request, response) => {
+  Person.findById(request.params.id).then(person => {
+    response.json(person)
+  })/*
   const id = Number(request.params.id)
   console.log(id)
   const person = phonebook.find(person => person.id === id)
@@ -54,7 +64,7 @@ app.get('/api/persons/:id', (request, response) => {
     response.json(person)
   } else {
     response.status(404).end()
-  }  
+  }  */
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -78,7 +88,7 @@ app.post('/api/persons', (request, response) => {
       error: 'name o number missing' 
     })
   }
-  
+  /* validacion si existia el nro
   const exist = phonebook.find(person => person.name === body.name)
 
   if (exist) {
@@ -86,16 +96,20 @@ app.post('/api/persons', (request, response) => {
       error: 'name must be unique' 
     })
   }
+  */
 
-  const person = {
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  }
+  })
 
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
+  /* cod anterior
   phonebook = phonebook.concat(person)
 
-  response.json(person)
+  response.json(person)*/
 })
 
 const unknownEndpoint = (request, response) => {
