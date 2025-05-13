@@ -51,20 +51,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
-
-  if (!body.name || !body.number) {
-    next({name:'RequestError'})
-  }
-  /* validacion si existia el nro
-  const exist = phonebook.find(person => person.name === body.name)
-
-  if (exist) {
-    return response.status(400).json({ 
-      error: 'name must be unique' 
-    })
-  }
-  */
-
+  
   const person = new Person({
     name: body.name,
     number: body.number,
@@ -72,18 +59,17 @@ app.post('/api/persons', (request, response, next) => {
 
   person.save().then(savedPerson => {
     response.json(savedPerson)
-  })
+  })  
+  .catch(error => next(error))
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-  const body = request.body
+  const {name, number} = request.body
 
-  const person = {
-    name: body.name,
-    number: body.number,
-  }
-
-  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+  Person.findByIdAndUpdate(
+    request.params.id, 
+    {name, number}, 
+    { new: true, runValidators: true, context: 'query'})
     .then(updatedPerson => {
       response.json(updatedPerson)
     })
@@ -102,10 +88,9 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
-  if (error.name === 'RequestError') {
-    return response.status(400).send({ error: 'name o number missing' })
-  } 
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }
 
   next(error)
 }
